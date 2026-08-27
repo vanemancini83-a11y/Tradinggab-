@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0F2B22" />
+  <meta name="description" content="TradingGab — suivi des marchés BVMAC, crypto, forex et matières premières pour la zone CEMAC." />
+
+  <title>TradingGab — Le pouls des marchés CEMAC</title>
+
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="icon" href="icons/icon-192.png" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <header class="app-header">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">◆</span>
+      <span class="brand-name">TradingGab</span>
+    </div>
+    <div class="header-right">
+      <div class="freshness" id="freshness">
+        <span class="dot" aria-hidden="true"></span>
+        <span id="freshness-text">Mise à jour…</span>
+      </div>
+      <button class="account-link" id="account-link">Compte</button>
+    </div>
+  </header>
+
+  <section class="pulse-strip" aria-label="Le pouls CEMAC — défilement des valeurs">
+    <div class="pulse-track" id="pulse-track">
+      <!-- rempli par app.js -->
+    </div>
+  </section>
+
+  <main>
+
+    <section class="hero" id="hero">
+      <p class="hero-eyebrow">BVMAC · Zone CEMAC</p>
+      <h1 class="hero-name" id="hero-name">BGFI Holding Corporation</h1>
+      <div class="hero-figures">
+        <span class="hero-price" id="hero-price">— FCFA</span>
+        <span class="hero-change" id="hero-change">—</span>
+      </div>
+      <p class="hero-note">La plus grosse capitalisation de la BVMAC</p>
+    </section>
+
+    <nav class="tabs" aria-label="Catégories de marchés">
+      <button class="tab is-active" data-market="bvmac">BVMAC</button>
+      <button class="tab" data-market="crypto">Crypto</button>
+      <button class="tab" data-market="forex">Forex</button>
+      <button class="tab" data-market="matieres">Matières</button>
+    </nav>
+
+    <section class="list" id="list" aria-live="polite">
+      <!-- rempli par app.js -->
+    </section>
+
+    <section class="premium-card">
+      <div>
+        <p class="premium-title">Passe en Premium</p>
+        <p class="premium-copy">Accède à toutes les valeurs BVMAC, aux cryptos et au forex sans limite.</p>
+      </div>
+      <button class="premium-cta">Voir les offres</button>
+    </section>
+
+  </main>
+
+  <footer class="app-footer">
+    <p>Données BVMAC via Mansa API · rafraîchies toutes les 30 minutes</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+                                                      </html>
