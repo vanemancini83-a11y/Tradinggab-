@@ -1,4 +1,9 @@
-const BACKEND_BASE_URL = "https://tradinggab-backend-2.onrender.com";
+// ---------------------------------------------------------------
+// Config - URL Dynamique local / prod
+// ---------------------------------------------------------------
+const BACKEND_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+  ? "http://localhost:3000"
+  : "https://tradinggab-backend-2.onrender.com";
 
 const state = { mode: "connexion" };
 
@@ -18,13 +23,13 @@ const COPY = {
     subtitle: "Content de te revoir.",
     hint: "",
     submit: "Se connecter",
-    submitLoading: "Connexion…",
+    submitLoading: "Connexion (réveil du serveur...)…",
   },
   inscription: {
     subtitle: "Crée ton compte pour suivre les marchés.",
     hint: "Au moins 6 caractères.",
     submit: "Créer mon compte",
-    submitLoading: "Création…",
+    submitLoading: "Création (réveil du serveur...)…",
   },
 };
 
@@ -53,6 +58,23 @@ function setupTabs() {
   });
 }
 
+// Utilitaire avec Timeout pour le Cold Start Render
+async function fetchWithTimeout(resource, options = {}, timeoutMs = 20000) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(resource, {
+      ...options,
+      signal: controller.signal
+    });
+    clearTimeout(id);
+    return response;
+  } catch (err) {
+    clearTimeout(id);
+    throw err;
+  }
+}
+
 async function handleSubmit(event) {
   event.preventDefault();
   hideError();
@@ -71,11 +93,11 @@ async function handleSubmit(event) {
   els.submit.textContent = COPY[state.mode].submitLoading;
 
   try {
-    const res = await fetch(`${BACKEND_BASE_URL}${endpoint}`, {
+    const res = await fetchWithTimeout(`${BACKEND_BASE_URL}${endpoint}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ phoneNumber, password }),
-    });
+    }, 20000);
 
     const data = await res.json();
 
@@ -84,6 +106,7 @@ async function handleSubmit(event) {
       return;
     }
 
+    // Stockage du Token et Redirection
     localStorage.setItem("tradinggab_token", data.token);
     localStorage.setItem("tradinggab_user_id", data.userId);
     localStorage.setItem("tradinggab_is_premium", String(Boolean(data.isPremium)));
@@ -91,7 +114,11 @@ async function handleSubmit(event) {
     window.location.href = "index.html";
   } catch (err) {
     console.error(err);
-    showError("Impossible de joindre le serveur. Vérifie ta connexion et réessaie.");
+    if (err.name === 'AbortError') {
+      showError("Le serveur met du temps à répondre. Réessaie dans quelques secondes.");
+    } else {
+      showError("Impossible de joindre le serveur. Vérifie ta connexion.");
+    }
   } finally {
     els.submit.disabled = false;
     els.submit.textContent = COPY[state.mode].submit;
