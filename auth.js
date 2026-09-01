@@ -27,7 +27,7 @@ const COPY = {
   },
   inscription: {
     subtitle: "Crée ton compte pour suivre les marchés.",
-    hint: "Au moins 6 caractères.",
+    hint: "Au moins 8 caractères.",
     submit: "Créer mon compte",
     submitLoading: "Création (réveil du serveur...)…",
   },
@@ -74,8 +74,46 @@ async function fetchWithTimeout(resource, options = {}, timeoutMs = 20000) {
     throw err;
   }
 }
-
 async function handleSubmit(event) {
+  event.preventDefault();
+  hideError();
+
+  const phoneEl = els.phone || document.querySelector('input[type="tel"]') || document.querySelector('input[name="phone"]') || document.querySelector('#phone');
+  const passwordEl = els.password || document.querySelector('input[type="password"]') || document.querySelector('#password');
+
+  const phoneNumber = phoneEl ? phoneEl.value.trim() : "";
+  const password = passwordEl ? passwordEl.value : "";
+
+  if (!phoneNumber || !password) {
+    showError("Le numéro de téléphone et le mot de passe sont requis.");
+    return;
+  }
+
+  const endpoint = state.mode === "connexion" ? "/api/auth/connexion" : "/api/auth/inscription";
+  
+  els.submit.disabled = true;
+  els.submit.textContent = state.mode === "connexion" ? "Connexion..." : "Création...";
+
+  try {
+    const response = await fetch(`${API_URL}${endpoint}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone: phoneNumber, password })
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "Une erreur est survenue");
+
+    if (data.token) localStorage.setItem("token", data.token);
+    window.location.reload();
+  } catch (err) {
+    showError(err.message);
+  } finally {
+    els.submit.disabled = false;
+    els.submit.textContent = state.mode === "connexion" ? "Se connecter" : "Créer mon compte";
+  }
+}
+
   event.preventDefault();
   hideError();
 
