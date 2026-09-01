@@ -9,7 +9,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const tabs = document.querySelectorAll('.auth-tab, [data-mode]');
   const form = document.getElementById('auth-form') || document.querySelector('form');
   const subtitle = document.getElementById('auth-subtitle');
-  const errorBox = document.getElementById('error-message') || document.querySelector('.error-msg');
+  const errorBox = document.getElementById('auth-error')
+    || document.getElementById('error-message')
+    || document.querySelector('.auth-error')
+    || document.querySelector('.error-msg');
 
   // 1. Gestion du clic sur les onglets (Connexion / Inscription)
   tabs.forEach(tab => {
