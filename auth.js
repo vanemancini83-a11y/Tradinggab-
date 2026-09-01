@@ -6,21 +6,23 @@ const state = {
   mode: "connexion" // 'connexion' ou 'inscription'
 };
 
-// Sélection des éléments HTML
-const els = {
-  tabConnexion: document.querySelector('#tab-connexion') || document.querySelector('[data-tab="connexion"]'),
-  tabInscription: document.querySelector('#tab-inscription') || document.querySelector('[data-tab="inscription"]'),
-  form: document.querySelector('form') || document.querySelector('#auth-form'),
-  phoneInput: document.querySelector('input[type="tel"]') || document.querySelector('input[name="phone"]') || document.querySelector('#phone'),
-  passwordInput: document.querySelector('input[type="password"]') || document.querySelector('input[name="password"]') || document.querySelector('#password'),
-  togglePasswordBtn: document.querySelector('#toggle-password') || document.querySelector('.toggle-password'),
-  submitBtn: document.querySelector('button[type="submit"]') || document.querySelector('#submit-btn'),
-  errorBox: document.querySelector('#error-message') || document.querySelector('.error-msg'),
-  passwordHelpText: document.querySelector('#password-help') || document.querySelector('.password-help')
-};
+// Fonction pour récupérer les éléments à la volée (évite les valeurs nulles)
+function getElements() {
+  return {
+    tabConnexion: document.querySelector('#tab-connexion') || document.querySelectorAll('.tab')[0],
+    tabInscription: document.querySelector('#tab-inscription') || document.querySelectorAll('.tab')[1],
+    form: document.querySelector('form') || document.querySelector('#auth-form'),
+    phoneInput: document.querySelector('input[type="tel"]') || document.querySelector('input[name="phone"]') || document.querySelector('#phone') || document.querySelectorAll('input')[0],
+    passwordInput: document.querySelector('input[type="password"]') || document.querySelector('input[name="password"]') || document.querySelector('#password') || document.querySelectorAll('input')[1],
+    submitBtn: document.querySelector('button[type="submit"]') || document.querySelector('button.btn-primary') || document.querySelector('button'),
+    errorBox: document.querySelector('#error-message') || document.querySelector('.error-msg'),
+    passwordHelpText: document.querySelector('#password-help') || document.querySelector('.password-help') || document.querySelector('small')
+  };
+}
 
 // Afficher / Masquer l'erreur
 function showError(msg) {
+  const els = getElements();
   if (els.errorBox) {
     els.errorBox.textContent = msg;
     els.errorBox.style.display = "block";
@@ -30,6 +32,7 @@ function showError(msg) {
 }
 
 function hideError() {
+  const els = getElements();
   if (els.errorBox) {
     els.errorBox.textContent = "";
     els.errorBox.style.display = "none";
@@ -41,6 +44,7 @@ function setMode(mode) {
   state.mode = mode;
   hideError();
 
+  const els = getElements();
   if (els.tabConnexion && els.tabInscription) {
     els.tabConnexion.classList.toggle('active', mode === 'connexion');
     els.tabInscription.classList.toggle('active', mode === 'inscription');
@@ -50,24 +54,23 @@ function setMode(mode) {
     els.submitBtn.textContent = mode === 'connexion' ? 'Se connecter' : 'Créer mon compte';
   }
 
-  // Mettre à jour la consigne du mot de passe (8 caractères min)
   if (els.passwordHelpText) {
     els.passwordHelpText.textContent = "Au moins 8 caractères.";
   }
 }
 
-// Gestion de la visibilité du mot de passe (L'œil)
+// Gestion de l'œil pour la visibilité du mot de passe
 function setupPasswordToggle() {
+  const els = getElements();
   if (!els.passwordInput) return;
 
-  // Si le bouton d'œil n'existe pas dans le HTML, on le crée dynamiquement à côté du mot de passe
-  let toggleBtn = els.togglePasswordBtn;
+  let toggleBtn = document.querySelector('#toggle-password');
   if (!toggleBtn) {
     toggleBtn = document.createElement('button');
     toggleBtn.type = 'button';
     toggleBtn.id = 'toggle-password';
     toggleBtn.innerHTML = '👁️';
-    toggleBtn.style.cssText = 'position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #fff; font-size: 16px;';
+    toggleBtn.style.cssText = 'position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: #fff; font-size: 16px; z-index: 10;';
     
     const parent = els.passwordInput.parentElement;
     if (parent) {
@@ -76,11 +79,12 @@ function setupPasswordToggle() {
     }
   }
 
-  toggleBtn.addEventListener('click', () => {
+  toggleBtn.onclick = (e) => {
+    e.preventDefault();
     const isPassword = els.passwordInput.type === 'password';
     els.passwordInput.type = isPassword ? 'text' : 'password';
     toggleBtn.innerHTML = isPassword ? '🙈' : '👁️';
-  });
+  };
 }
 
 // Validation et soumission du formulaire
@@ -88,16 +92,16 @@ async function handleSubmit(event) {
   event.preventDefault();
   hideError();
 
+  const els = getElements();
   const phone = els.phoneInput ? els.phoneInput.value.trim() : "";
-  const password = els.passwordInput ? els.passwordInput.value : "";
+  const password = els.passwordInput ? els.passwordInput.value.trim() : "";
 
-  // 1. Vérification des champs vides
+  // 1. Vérification côté client
   if (!phone || !password) {
-    showError("Le numéro de téléphone et le mot de passe sont requis.");
+    showError("Veuillez remplir le téléphone et le mot de passe.");
     return;
   }
 
-  // 2. Vérification de la sécurité du mot de passe (8 caractères minimum)
   if (password.length < 8) {
     showError("Le mot de passe doit contenir au moins 8 caractères.");
     return;
@@ -114,21 +118,26 @@ async function handleSubmit(event) {
     const response = await fetch(`${API_URL}${endpoint}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone, password })
+      // Envoie des clés compatibles pour le backend
+      body: JSON.stringify({ 
+        phone: phone, 
+        telephone: phone, 
+        password: password 
+      })
     });
 
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.error || data.message || "Une erreur est survenue.");
+      throw new Error(data.error || data.message || "Erreur d'authentification");
     }
 
-    // Sauvegarde du token de session et rechargement
+    // Connexion réussie
     if (data.token) {
       localStorage.setItem("token", data.token);
     }
     
-    window.location.href = "/"; // Redirection vers l'accueil
+    window.location.href = "/";
   } catch (err) {
     showError(err.message);
   } finally {
@@ -139,24 +148,16 @@ async function handleSubmit(event) {
   }
 }
 
-// Initialisation au chargement de la page
+// Initialisation
 document.addEventListener('DOMContentLoaded', () => {
   setupPasswordToggle();
 
-  if (els.tabConnexion) {
-    els.tabConnexion.addEventListener('click', () => setMode('connexion'));
-  }
-  if (els.tabInscription) {
-    els.tabInscription.addEventListener('click', () => setMode('inscription'));
-  }
+  const els = getElements();
+  if (els.tabConnexion) els.tabConnexion.addEventListener('click', () => setMode('connexion'));
+  if (els.tabInscription) els.tabInscription.addEventListener('click', () => setMode('inscription'));
+  if (els.form) els.form.addEventListener('submit', handleSubmit);
 
-  if (els.form) {
-    els.form.addEventListener('submit', handleSubmit);
-  }
-
-  // S'assurer que le message sous le mot de passe affiche 8 caractères
   if (els.passwordHelpText) {
     els.passwordHelpText.textContent = "Au moins 8 caractères.";
   }
 });
-
