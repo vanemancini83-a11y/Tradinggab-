@@ -70,7 +70,7 @@ const RELEVANT_COMMODITIES = ["BRENT", "COCOA", "COFFEE", "PALM_OIL", "RUBBER", 
 
 async function fetchMarket(market) {
   if (market === "crypto") {
-    return EMPTY_MARKET;
+    return { ...EMPTY_MARKET, isPremium: false, total: 0 };
   }
 
   const endpoints = {
@@ -79,23 +79,30 @@ async function fetchMarket(market) {
     matieres: "/api/marches/matieres",
   };
 
+  const token = localStorage.getItem("tradinggab_token");
+
   try {
-    const res = await fetch(`${BACKEND_BASE_URL}${endpoints[market]}`);
+    const res = await fetch(`${BACKEND_BASE_URL}${endpoints[market]}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
     if (!res.ok) throw new Error("Réponse backend non OK");
     const result = await res.json();
+    const isPremium = !!result.isPremium;
+    const total = result.total ?? 0;
 
     if (market === "forex") {
       const filtered = (result.data || []).filter((r) => RELEVANT_FOREX_PAIRS.includes(r.pair));
-      return { success: true, data: filtered.map(adaptForex) };
+      return { success: true, data: filtered.map(adaptForex), isPremium, total };
     }
     if (market === "matieres") {
       const filtered = (result.data || []).filter((r) => RELEVANT_COMMODITIES.includes(r.symbol));
-      return { success: true, data: filtered.map(adaptCommodity) };
+      return { success: true, data: filtered.map(adaptCommodity), isPremium, total };
     }
-    return result;
+    return { success: true, data: result.data || [], isPremium, total };
   } catch (err) {
     console.warn(`Backend indisponible pour ${market}, données d'exemple utilisées si BVMAC.`, err);
-    return market === "bvmac" ? SAMPLE_BVMAC : EMPTY_MARKET;
+    const fallback = market === "bvmac" ? SAMPLE_BVMAC : EMPTY_MARKET;
+    return { ...fallback, isPremium: false, total: fallback.data.length };
   }
 }
 
@@ -138,10 +145,13 @@ function renderHero(items) {
   changeEl.className = `hero-change ${changeClass(featured.change_pct)}`;
 }
 
-function renderList(items, market) {
+function renderList(items, market, meta = {}) {
   const list = document.getElementById("list");
+  const isPremium = !!meta.isPremium;
+  const total = meta.total ?? items.length;
+  const lockedCount = isPremium ? 0 : Math.max(0, total - items.length);
 
-  if (!items.length) {
+  if (!items.length && !lockedCount) {
     const messages = {
       crypto: "La crypto arrive bientôt sur TradingGab — endpoint en cours de confirmation.",
       forex: "Aucune donnée forex disponible pour le moment.",
@@ -167,6 +177,20 @@ function renderList(items, market) {
       </div>`
     )
     .join("");
+
+  if (lockedCount > 0) {
+    const label = market === "forex" ? "paire" : market === "matieres" ? "matière" : "valeur";
+    const plural = lockedCount > 1 ? "s" : "";
+    list.insertAdjacentHTML(
+      "beforeend",
+      `<button class="locked-cta" type="button">
+        <span class="locked-cta-count">+${lockedCount} ${label}${plural} de plus</span>
+        <span class="locked-cta-action">Débloquer avec Premium →</span>
+      </button>`
+    );
+    const cta = list.querySelector(".locked-cta");
+    if (cta) cta.addEventListener("click", () => document.querySelector(".premium-cta")?.click());
+  }
 }
 
 function renderFreshness() {
@@ -179,6 +203,14 @@ function renderFreshness() {
 async function loadMarket(market) {
   const result = await fetchMarket(market);
   const items = result.data || [];
+  const premium = !!result.isPremium;
+  state.isPremium = premium;
+
+  // Le statut Premium vient du backend (source de vérité) — on synchronise
+  // le localStorage et le CTA pour éviter qu'une valeur périmée ne bloque
+  // le bouton de paiement.
+  localStorage.setItem("tradinggab_is_premium", premium ? "1" : "0");
+  refreshPremiumCta(premium);
 
   if (market === "bvmac") {
     state.bvmac = items;
@@ -186,7 +218,7 @@ async function loadMarket(market) {
     renderPulse(items);
   }
 
-  renderList(items, market);
+  renderList(items, market, result);
   renderFreshness();
 }
 
@@ -220,6 +252,39 @@ function setupAccountLink() {
   });
 }
 
+function refreshPremiumCta(isPremium) {
+  const card = document.querySelector(".premium-card");
+  const btn = document.querySelector(".premium-cta");
+  if (!card || !btn) return;
+
+  if (isPremium) {
+    btn.textContent = "Abonnement actif ✓";
+    btn.disabled = true;
+    const copy = card.querySelector(".premium-copy");
+    if (copy) copy.textContent = "Merci ! Vous avez accès à toutes les valeurs, cryptos et forex sans limite.";
+  } else {
+    btn.textContent = "Voir les offres";
+    btn.disabled = false;
+  }
+}
+
+async function loadProfile() {
+  const token = localStorage.getItem("tradinggab_token");
+  if (!token) return;
+
+  try {
+    const res = await fetch(`${BACKEND_BASE_URL}/api/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return;
+    const { isPremium } = await res.json();
+    localStorage.setItem("tradinggab_is_premium", isPremium ? "1" : "0");
+    refreshPremiumCta(isPremium);
+  } catch {
+    // silencieux : l'UI reste en mode non-Premium par défaut
+  }
+}
+
 function setupPremiumButton() {
   const btn = document.querySelector(".premium-cta");
   btn.addEventListener("click", async () => {
@@ -227,6 +292,11 @@ function setupPremiumButton() {
 
     if (!token) {
       window.location.href = "auth.html";
+      return;
+    }
+
+    // Un abonné Premium n'a pas besoin de payer à nouveau.
+    if (localStorage.getItem("tradinggab_is_premium") === "1") {
       return;
     }
 
@@ -264,6 +334,7 @@ function init() {
   setupTabs();
   setupPremiumButton();
   setupAccountLink();
+  loadProfile();
   loadMarket(state.market);
 
   if ("serviceWorker" in navigator) {
