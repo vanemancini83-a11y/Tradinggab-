@@ -1,4 +1,4 @@
-const CACHE_NAME = "tradinggab-v3";
+const CACHE_NAME = "tradinggab-v4";
 const CORE_ASSETS = ["/", "/index.html", "/styles.css", "/app.js", "/manifest.json"];
 
 self.addEventListener("install", (event) => {

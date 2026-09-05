@@ -1,7 +1,7 @@
 {
   "name": "TradingGab",
   "short_name": "TradingGab",
-  "description": "Suivi des marchés BVMAC, crypto, forex et matières premières pour la zone CEMAC.",
+  "description": "TradingGab — Le regard sur les marchés CEMAC. Suivi des marchés BVMAC, crypto, forex et matières premières.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0F2B22",
