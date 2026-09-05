@@ -575,4 +575,14 @@ button {
   font-size: 11px;
   color: var(--muted);
   text-align: center;
+  line-height: 1.7;
+}
+
+.auth-privacy-link {
+  color: var(--gold);
+  text-decoration: none;
+}
+
+.auth-privacy-link:hover {
+  text-decoration: underline;
 }
