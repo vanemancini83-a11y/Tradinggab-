@@ -161,6 +161,14 @@ function renderList(items, market, meta = {}) {
     const arrow = trend === "up" ? "▲" : trend === "down" ? "▼" : "–";
 
     return `
+   list.innerHTML = items
+  .map((item) => {
+    const initials = item.ticker.slice(0, 2).toUpperCase();
+    const trend =
+      item.change_pct > 0 ? "up" : item.change_pct < 0 ? "down" : "flat";
+    const arrow = trend === "up" ? "▲" : trend === "down" ? "▼" : "–";
+
+    return `
       <div class="asset-card">
         <div class="asset-card__row">
           <div class="asset-card__avatar">${initials}</div>
@@ -176,22 +184,7 @@ function renderList(items, market, meta = {}) {
       </div>
     `;
   })
-  .join("");
-    .map(
-      (item) => `
-      <div class="row">
-        <div class="row-left">
-          <span class="row-ticker">${item.ticker}</span>
-          <span class="row-name">${item.name}</span>
-          ${item.note ? `<span class="row-note">${item.note}</span>` : ""}
-        </div>
-        <div class="row-right">
-          <span class="row-price">${item.priceDisplay ?? formatFCFA(item.price)}</span>
-          <span class="row-change ${changeClass(item.change_pct)}">${formatChange(item.change_pct)}</span>
-        </div>
-      </div>`
-    )
-    .join("");
+  .join(""); 
 
   if (lockedCount > 0) {
     const label = market === "forex" ? "paire" : market === "matieres" ? "matière" : "valeur";
