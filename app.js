@@ -153,15 +153,30 @@ function renderList(items, market, meta = {}) {
 
   if (!items.length && !lockedCount) {
     const messages = {
-      crypto: "La crypto arrive bientôt sur TradingGab — endpoint en cours de confirmation.",
-      forex: "Aucune donnée forex disponible pour le moment.",
-      matieres: "Aucune donnée disponible pour le moment.",
-    };
-    list.innerHTML = `<div class="empty-state">${messages[market] || "Aucune donnée disponible."}</div>`;
-    return;
-  }
+      crypto: list.innerHTML = items
+  .map((item) => {
+    const initials = item.ticker.slice(0, 2).toUpperCase();
+    const trend =
+      item.change_pct > 0 ? "up" : item.change_pct < 0 ? "down" : "flat";
+    const arrow = trend === "up" ? "▲" : trend === "down" ? "▼" : "–";
 
-  list.innerHTML = items
+    return `
+      <div class="asset-card">
+        <div class="asset-card__row">
+          <div class="asset-card__avatar">${initials}</div>
+          <div class="asset-card__info">
+            <p class="asset-card__name">${item.name}</p>
+            <p class="asset-card__price">${item.priceDisplay}</p>
+          </div>
+          <span class="asset-card__badge asset-card__badge--${trend}">
+            ${arrow} ${formatChange(item.change_pct)}
+          </span>
+        </div>
+        ${item.note ? `<p class="asset-card__note">${item.note}</p>` : ""}
+      </div>
+    `;
+  })
+  .join("");
     .map(
       (item) => `
       <div class="row">
