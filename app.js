@@ -345,3 +345,93 @@ function init() {
 }
 
 init();
+/**
+ * Génère une carte valeur (avec sparkline) et l'insère dans le conteneur.
+ *
+ * @param {HTMLElement} container - élément où insérer la carte
+ * @param {Object} asset
+ * @param {string} asset.name        - ex: "BGFI HC"
+ * @param {string} asset.ticker      - ex: "BGFIHC" (sert aussi à générer les initiales)
+ * @param {number} asset.price       - ex: 93050
+ * @param {number} asset.changePct   - ex: 1.4 (positif), -0.3 (négatif), 0 (stable)
+ * @param {number[]} asset.history   - ex: [92100, 92300, 92800, 93050] (série récente pour la sparkline)
+ */
+function renderAssetCard(container, asset) {
+  const initials = asset.ticker.slice(0, 2).toUpperCase();
+
+  const trend =
+    asset.changePct > 0 ? "up" : asset.changePct < 0 ? "down" : "flat";
+
+  const trendColor =
+    trend === "up" ? "#5DCAA5" : trend === "down" ? "#E24B4A" : "rgba(255,255,255,0.35)";
+
+  const badgeClass = `asset-card__badge--${trend}`;
+  const sign = asset.changePct > 0 ? "+" : "";
+
+  const sparklineSvg = buildSparkline(asset.history, trendColor);
+
+  const card = document.createElement("div");
+  card.className = "asset-card";
+  card.innerHTML = `
+    <div class="asset-card__row">
+      <div class="asset-card__avatar">${initials}</div>
+      <div class="asset-card__info">
+        <p class="asset-card__name">${asset.name}</p>
+        <p class="asset-card__price">${formatPrice(asset.price)}
+          <span class="asset-card__currency">FCFA</span>
+        </p>
+      </div>
+      <div class="asset-card__sparkline">${sparklineSvg}</div>
+      <span class="asset-card__badge ${badgeClass}">${sign}${asset.changePct.toFixed(1)}%</span>
+    </div>
+  `;
+
+  container.appendChild(card);
+}
+
+/** Construit un mini graphique SVG à partir d'une série de valeurs. */
+function buildSparkline(history, color, width = 56, height = 26) {
+  if (!history || history.length < 2) {
+    // pas assez de données : ligne plate neutre
+    return `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+      <line x1="0" y1="${height / 2}" x2="${width}" y2="${height / 2}"
+            stroke="rgba(255,255,255,0.25)" stroke-width="2" stroke-linecap="round"/>
+    </svg>`;
+  }
+
+  const min = Math.min(...history);
+  const max = Math.max(...history);
+  const range = max - min || 1;
+
+  const points = history
+    .map((val, i) => {
+      const x = (i / (history.length - 1)) * width;
+      const y = height - ((val - min) / range) * height;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(" ");
+
+  return `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+    <polyline points="${points}" fill="none" stroke="${color}"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+}
+
+/** Formate un prix avec espace comme séparateur de milliers. */
+function formatPrice(value) {
+  return new Intl.NumberFormat("fr-FR").format(Math.round(value));
+}
+
+/* ==== Exemple d'utilisation ====
+
+const container = document.getElementById("asset-list");
+
+renderAssetCard(container, {
+  name: "BGFI HC",
+  ticker: "BGFIHC",
+  price: 93050,
+  changePct: 1.4,
+  history: [91800, 92100, 92400, 92300, 92900, 93050],
+});
+
+*/
