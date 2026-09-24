@@ -1,17 +1,18 @@
+// ---------------------------------------------------------------
+// Gestion des erreurs visibles (pour le débogage)
+// ---------------------------------------------------------------
 window.addEventListener("error", function (e) {
   document.body.insertAdjacentHTML(
     "afterbegin",
-    `<pre style="background:red;color:white;padding:12px;white-space:pre-wrap;font-size:14px;z-index:9999;position:relative;">ERREUR JS : ${e.message}
-Fichier : ${e.filename}
-Ligne : ${e.lineno}</pre>`
+    `<pre style="background:red;color:white;padding:12px;white-space:pre-wrap;font-size:14px;z-index:9999;position:relative;">ERREUR JS : ${e.message}\nFichier : ${e.filename}\nLigne : ${e.lineno}</pre>`
   );
-});// ---------------------------------------------------------------
+});
+
+// ---------------------------------------------------------------
 // Config
 // ---------------------------------------------------------------
 const BACKEND_BASE_URL = "https://tradinggab-backend-2.onrender.com";
 
-// Tant que le backend n'est pas déployé/lancé, l'app utilise ces données
-// d'exemple — identiques en forme à la vraie réponse Mansa API testée.
 const SAMPLE_BVMAC = {
   success: true,
   data: [
@@ -30,6 +31,7 @@ const EMPTY_MARKET = { success: true, data: [] };
 const state = {
   market: "bvmac",
   bvmac: null,
+  isPremium: false,
 };
 
 function formatFCFA(value) {
@@ -51,6 +53,7 @@ function formatChange(pct) {
 }
 
 const RELEVANT_FOREX_PAIRS = ["USD/XAF", "USD/EUR", "USD/GBP", "USD/CNY"];
+const RELEVANT_COMMODITIES = ["BRENT", "COCOA", "COFFEE", "PALM_OIL", "RUBBER", "GOLD"];
 
 function adaptForex(rawItem) {
   return {
@@ -72,8 +75,6 @@ function adaptCommodity(rawItem) {
     note: rawItem.africa_note,
   };
 }
-
-const RELEVANT_COMMODITIES = ["BRENT", "COCOA", "COFFEE", "PALM_OIL", "RUBBER", "GOLD"];
 
 async function fetchMarket(market) {
   if (market === "crypto") {
@@ -115,6 +116,7 @@ async function fetchMarket(market) {
 
 function renderPulse(items) {
   const track = document.getElementById("pulse-track");
+  if (!track) return;
   if (!items.length) {
     track.innerHTML = "";
     return;
@@ -138,13 +140,7 @@ function renderHero(items) {
   const priceEl = document.getElementById("hero-price");
   const changeEl = document.getElementById("hero-change");
 
-  if (!featured) {
-    nameEl.textContent = "Aucune donnée disponible";
-    priceEl.textContent = "—";
-    changeEl.textContent = "—";
-    changeEl.className = "hero-change";
-    return;
-  }
+  if (!featured || !nameEl || !priceEl || !changeEl) return;
 
   nameEl.textContent = featured.name;
   priceEl.textContent = formatFCFA(featured.price);
@@ -152,46 +148,47 @@ function renderHero(items) {
   changeEl.className = `hero-change ${changeClass(featured.change_pct)}`;
 }
 
+// ---------------------------------------------------------------
+// ✅ CORRECTION MAJEURE : Fonction renderList réparée
+// ---------------------------------------------------------------
 function renderList(items, market, meta = {}) {
   const list = document.getElementById("list");
+  if (!list) return;
+
   const isPremium = !!meta.isPremium;
   const total = meta.total ?? items.length;
   const lockedCount = isPremium ? 0 : Math.max(0, total - items.length);
 
   if (!items.length && !lockedCount) {
-    const messages = {
-      crypto: list.innerHTML = items
-  .map((item) => {
-    const initials = item.ticker.slice(0, 2).toUpperCase();
-    const trend =
-      item.change_pct > 0 ? "up" : item.change_pct < 0 ? "down" : "flat";
-    const arrow = trend === "up" ? "▲" : trend === "down" ? "▼" : "–";
+    list.innerHTML = `<p class="empty-message" style="text-align:center; padding: 20px; color: #888;">Aucune donnée disponible pour le moment.</p>`;
+    return;
+  }
 
-    return `
-   list.innerHTML = items
-  .map((item) => {
-    const initials = item.ticker.slice(0, 2).toUpperCase();
-    const trend =
-      item.change_pct > 0 ? "up" : item.change_pct < 0 ? "down" : "flat";
-    const arrow = trend === "up" ? "▲" : trend === "down" ? "▼" : "–";
+  list.innerHTML = items
+    .map((item) => {
+      const initials = item.ticker.slice(0, 2).toUpperCase();
+      const trend = item.change_pct > 0 ? "up" : item.change_pct < 0 ? "down" : "flat";
+      const arrow = trend === "up" ? "▲" : trend === "down" ? "▼" : "–";
+      // Gère à la fois priceDisplay (forex/matieres) et price (bvmac)
+      const priceText = item.priceDisplay || formatFCFA(item.price);
 
-    return `
-      <div class="asset-card">
-        <div class="asset-card__row">
-          <div class="asset-card__avatar">${initials}</div>
-          <div class="asset-card__info">
-            <p class="asset-card__name">${item.name}</p>
-            <p class="asset-card__price">${item.priceDisplay}</p>
+      return `
+        <div class="asset-card">
+          <div class="asset-card__row">
+            <div class="asset-card__avatar">${initials}</div>
+            <div class="asset-card__info">
+              <p class="asset-card__name">${item.name}</p>
+              <p class="asset-card__price">${priceText}</p>
+            </div>
+            <span class="asset-card__badge asset-card__badge--${trend}">
+              ${arrow} ${formatChange(item.change_pct)}
+            </span>
           </div>
-          <span class="asset-card__badge asset-card__badge--${trend}">
-            ${arrow} ${formatChange(item.change_pct)}
-          </span>
+          ${item.note ? `<p class="asset-card__note">${item.note}</p>` : ""}
         </div>
-        ${item.note ? `<p class="asset-card__note">${item.note}</p>` : ""}
-      </div>
-    `;
-  })
-  .join(""); 
+      `;
+    })
+    .join("");
 
   if (lockedCount > 0) {
     const label = market === "forex" ? "paire" : market === "matieres" ? "matière" : "valeur";
@@ -210,20 +207,19 @@ function renderList(items, market, meta = {}) {
 
 function renderFreshness() {
   const el = document.getElementById("freshness-text");
+  if (!el) return;
   const now = new Date();
   const time = now.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
   el.textContent = `Mis à jour à ${time}`;
 }
 
 async function loadMarket(market) {
+  state.market = market;
   const result = await fetchMarket(market);
   const items = result.data || [];
   const premium = !!result.isPremium;
   state.isPremium = premium;
 
-  // Le statut Premium vient du backend (source de vérité) — on synchronise
-  // le localStorage et le CTA pour éviter qu'une valeur périmée ne bloque
-  // le bouton de paiement.
   localStorage.setItem("tradinggab_is_premium", premium ? "1" : "0");
   refreshPremiumCta(premium);
 
@@ -251,6 +247,7 @@ function setupTabs() {
 
 function setupAccountLink() {
   const btn = document.getElementById("account-link");
+  if (!btn) return;
   const token = localStorage.getItem("tradinggab_token");
 
   btn.textContent = token ? "Déconnexion" : "Se connecter";
@@ -302,6 +299,8 @@ async function loadProfile() {
 
 function setupPremiumButton() {
   const btn = document.querySelector(".premium-cta");
+  if (!btn) return;
+  
   btn.addEventListener("click", async () => {
     const token = localStorage.getItem("tradinggab_token");
 
@@ -310,7 +309,6 @@ function setupPremiumButton() {
       return;
     }
 
-    // Un abonné Premium n'a pas besoin de payer à nouveau.
     if (localStorage.getItem("tradinggab_is_premium") === "1") {
       return;
     }
@@ -359,125 +357,5 @@ function init() {
   }
 }
 
-init();
-/**
- * Génère une carte valeur (avec sparkline) et l'insère dans le conteneur.
- *
- * @param {HTMLElement} container - élément où insérer la carte
- * @param {Object} asset
- * @param {string} asset.name        - ex: "BGFI HC"
- * @param {string} asset.ticker      - ex: "BGFIHC" (sert aussi à générer les initiales)
- * @param {number} asset.price       - ex: 93050
- * @param {number} asset.changePct   - ex: 1.4 (positif), -0.3 (négatif), 0 (stable)
- * @param {number[]} asset.history   - ex: [92100, 92300, 92800, 93050] (série récente pour la sparkline)
- */
-function renderAssetCard(container, asset) {
-  const initials = asset.ticker.slice(0, 2).toUpperCase();
-
-  const trend =
-    asset.changePct > 0 ? "up" : asset.changePct < 0 ? "down" : "flat";
-
-  const trendColor =
-    trend === "up" ? "#5DCAA5" : trend === "down" ? "#E24B4A" : "rgba(255,255,255,0.35)";
-
-  const badgeClass = `asset-card__badge--${trend}`;
-  const sign = asset.changePct > 0 ? "+" : "";
-
-  const sparklineSvg = buildSparkline(asset.history, trendColor);
-
-  const card = document.createElement("div");
-  card.className = "asset-card";
-  card.innerHTML = `
-    <div class="asset-card__row">
-      <div class="asset-card__avatar">${initials}</div>
-      <div class="asset-card__info">
-        <p class="asset-card__name">${asset.name}</p>
-        <p class="asset-card__price">${formatPrice(asset.price)}
-          <span class="asset-card__currency">FCFA</span>
-        </p>
-      </div>
-      <div class="asset-card__sparkline">${sparklineSvg}</div>
-      <span class="asset-card__badge ${badgeClass}">${sign}${asset.changePct.toFixed(1)}%</span>
-    </div>
-  `;
-
-  container.appendChild(card);
-}
-
-/** Construit un mini graphique SVG à partir d'une série de valeurs. */
-function buildSparkline(history, color, width = 56, height = 26) {
-  if (!history || history.length < 2) {
-    // pas assez de données : ligne plate neutre
-    return `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
-      <line x1="0" y1="${height / 2}" x2="${width}" y2="${height / 2}"
-            stroke="rgba(255,255,255,0.25)" stroke-width="2" stroke-linecap="round"/>
-    </svg>`;
-  }
-
-  const min = Math.min(...history);
-  const max = Math.max(...history);
-  const range = max - min || 1;
-
-  const points = history
-    .map((val, i) => {
-      const x = (i / (history.length - 1)) * width;
-      const y = height - ((val - min) / range) * height;
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    })
-    .join(" ");
-
-  return `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
-    <polyline points="${points}" fill="none" stroke="${color}"
-              stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-  </svg>`;
-}
-
-/** Formate un prix avec espace comme séparateur de milliers. */
-function formatPrice(value) {
-  return new Intl.NumberFormat("fr-FR").format(Math.round(value));
-}
-
-/* ==== Exemple d'utilisation ====
-
-const container = document.getElementById("asset-list");
-
-renderAssetCard(container, {
-  name: "BGFI HC",
-  ticker: "BGFIHC",
-  price: 93050,
-  changePct: 1.4,
-  history: [91800, 92100, 92400, 92300, 92900, 93050],
-});
-
-*/// ---------------------------------------
-// Initialisation
-// ---------------------------------------
-
-async function loadMarket(market) {
-  state.market = market;
-  const result = await fetchMarket(market);
-
-  renderList(result.data, market, result);
-  renderFreshness();
-
-  if (market === "bvmac") {
-    renderHero(result.data);
-    renderPulse(result.data);
-  }
-}
-
-function initTabs() {
-  const tabs = document.querySelectorAll(".tab");
-  tabs.forEach((tab) => {
-    tab.addEventListener("click", () => {
-      tabs.forEach((t) => t.classList.remove("is-active"));
-      tab.classList.add("is-active");
-      loadMarket(tab.dataset.market);
-    });
-  });
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-  initTabs();
-  loadMarket(state.market);
-});
+// Initialisation propre au chargement du DOM
+document.addEventListener("DOMContentLoaded", init);
