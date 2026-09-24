@@ -442,4 +442,35 @@ renderAssetCard(container, {
   history: [91800, 92100, 92400, 92300, 92900, 93050],
 });
 
-*/
+*/// ---------------------------------------
+// Initialisation
+// ---------------------------------------
+
+async function loadMarket(market) {
+  state.market = market;
+  const result = await fetchMarket(market);
+
+  renderList(result.data, market, result);
+  renderFreshness();
+
+  if (market === "bvmac") {
+    renderHero(result.data);
+    renderPulse(result.data);
+  }
+}
+
+function initTabs() {
+  const tabs = document.querySelectorAll(".tab");
+  tabs.forEach((tab) => {
+    tab.addEventListener("click", () => {
+      tabs.forEach((t) => t.classList.remove("is-active"));
+      tab.classList.add("is-active");
+      loadMarket(tab.dataset.market);
+    });
+  });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  initTabs();
+  loadMarket(state.market);
+});
