@@ -1,4 +1,11 @@
-// ---------------------------------------------------------------
+window.addEventListener("error", function (e) {
+  document.body.insertAdjacentHTML(
+    "afterbegin",
+    `<pre style="background:red;color:white;padding:12px;white-space:pre-wrap;font-size:14px;z-index:9999;position:relative;">ERREUR JS : ${e.message}
+Fichier : ${e.filename}
+Ligne : ${e.lineno}</pre>`
+  );
+});// ---------------------------------------------------------------
 // Config
 // ---------------------------------------------------------------
 const BACKEND_BASE_URL = "https://tradinggab-backend-2.onrender.com";
