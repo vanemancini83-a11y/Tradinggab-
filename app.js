@@ -239,7 +239,7 @@ function renderList(items, market, meta = {}) {
       "beforeend",
       `<button class="locked-cta" type="button">
         <span class="locked-cta-count">+${lockedCount} ${label}${plural} de plus</span>
-        <span class="locked-cta-action">Débloquer avec Premium →</span>
+        <span class="locked-cta-action">Débloquer — 2 000 FCFA / mois →</span>
       </button>`
     );
     const cta = list.querySelector(".locked-cta");
@@ -322,7 +322,7 @@ function refreshPremiumCta(isPremium) {
     const copy = card.querySelector(".premium-copy");
     if (copy) copy.textContent = "Merci ! Vous avez accès à toutes les valeurs, cryptos et forex sans limite.";
   } else {
-    btn.textContent = "Voir les offres";
+    btn.textContent = "Passer Premium — 2 000 FCFA / mois";
     btn.disabled = false;
   }
 }
@@ -399,7 +399,7 @@ function setupPremiumButton() {
       console.error(err);
       alert("Le paiement n'a pas pu être lancé. Réessaie dans un instant.");
       btn.disabled = false;
-      btn.textContent = "Voir les offres";
+      btn.textContent = "Passer Premium — 2 000 FCFA / mois";
     }
   });
 }
