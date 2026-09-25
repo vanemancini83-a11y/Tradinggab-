@@ -117,7 +117,12 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.href = "/";
 
       } catch (err) {
-        showCustomError(err.message);
+        // ✅ Message clair quand le serveur est injoignable (instance en veille)
+        if (err instanceof TypeError || /failed to fetch/i.test(err.message)) {
+          showCustomError("Le serveur est en cours de réveil (30-50 s sur l'offre gratuite). Patientez puis réessayez.");
+        } else {
+          showCustomError(err.message);
+        }
       } finally {
         if (submitBtn) {
           submitBtn.disabled = false;
