@@ -669,4 +669,16 @@ button {
 .asset-card__badge--flat {
   color: rgba(255, 255, 255, 0.55);
   background: rgba(255, 255, 255, 0.08);
+} /* Prix dans la carte Premium (ajouter à la fin de styles.css) */
+.premium-price {
+  font-family: 'Fraunces', serif;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #E8C468;
+  margin: 6px 0 0;
+}
+.premium-price span {
+  font-size: 0.9rem;
+  font-weight: 400;
+  opacity: 0.75;
 }
