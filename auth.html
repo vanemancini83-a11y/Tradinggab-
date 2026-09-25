@@ -5,11 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#0F2B22" />
 
-  <title>TradingGab — Connexion</title>
+  <title>ViewCEMAC — Connexion</title>
 
   <link rel="manifest" href="manifest.json" />
-  <link rel="apple-touch-icon" href="icons/icon-192.png" />
-  <link rel="icon" href="icons/icon-192.png" />
+  <!-- ✅ CORRECTION : chemins d'icônes réels -->
+  <link rel="apple-touch-icon" href="icons/viewcemac-icon-192.png" />
+  <link rel="icon" href="icons/viewcemac-icon-192.png" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -24,7 +25,8 @@
     <div class="auth-brand">
       <div class="brand-row">
         <span class="brand-mark" aria-hidden="true">◆</span>
-        <span class="brand-name">TradingGab</span>
+        <!-- ✅ CORRECTION : branding cohérent ViewCEMAC -->
+        <span class="brand-name">ViewCEMAC</span>
       </div>
       <span class="brand-slogan">Le regard sur les marchés CEMAC</span>
     </div>
@@ -58,11 +60,12 @@
           name="password"
           placeholder="••••••••"
           autocomplete="current-password"
-          minlength="6"
+          minlength="8"
           required
         />
 
-        <p class="auth-hint" id="auth-hint">Au moins 6 caractères.</p>
+        <!-- ✅ CORRECTION : auth.js exige 8 caractères, le HTML était à 6 -->
+        <p class="auth-hint" id="auth-hint">Au moins 8 caractères.</p>
 
         <div class="auth-error" id="auth-error" role="alert"></div>
 
