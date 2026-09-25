@@ -4,6 +4,10 @@ const API_URL = "https://tradinggab-backend-2.onrender.com";
 // Mode par défaut
 let currentMode = "connexion";
 
+// Clé de stockage du token — DOIT correspondre à app.js ("tradinggab_token")
+const TOKEN_KEY = "tradinggab_token";
+const USER_ID_KEY = "tradinggab_user_id";
+
 // Détection des onglets au chargement
 document.addEventListener('DOMContentLoaded', () => {
   const tabs = document.querySelectorAll('.auth-tab, [data-mode]');
@@ -22,7 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!mode) return;
 
       currentMode = mode;
-      
+
       // Mise à jour de la classe is-active
       tabs.forEach(t => t.classList.remove('is-active'));
       tab.classList.add('is-active');
@@ -52,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Capture directe et garantie des données saisies dans les champs HTML
       const formData = new FormData(form);
-      
+
       // On cherche la valeur du téléphone (par name="phone" ou premier input)
       let phone = (formData.get('phone') || '').toString().trim();
       let password = (formData.get('password') || '').toString().trim();
@@ -99,8 +103,14 @@ document.addEventListener('DOMContentLoaded', () => {
           throw new Error(data.error || data.message || "Erreur lors de l'authentification");
         }
 
+        // ✅ CORRECTION : même clé que app.js ("tradinggab_token")
         if (data.token) {
-          localStorage.setItem("token", data.token);
+          localStorage.setItem(TOKEN_KEY, data.token);
+        }
+        // Conserve l'id utilisateur si le backend le renvoie (plusieurs formats possibles)
+        const userId = data.userId || data.user_id || (data.user && (data.user.id || data.user.user_id));
+        if (userId) {
+          localStorage.setItem(USER_ID_KEY, String(userId));
         }
 
         // Succès : redirection
