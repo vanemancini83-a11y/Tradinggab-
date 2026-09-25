@@ -12,6 +12,7 @@ window.addEventListener("error", function (e) {
 // Config
 // ---------------------------------------------------------------
 const BACKEND_BASE_URL = "https://tradinggab-backend-2.onrender.com";
+const REFRESH_INTERVAL_MS = 30 * 60 * 1000; // 30 min (cohérent avec le footer)
 
 const SAMPLE_BVMAC = {
   success: true,
@@ -129,7 +130,8 @@ async function fetchMarket(market) {
     const fallback = market === "bvmac" ? SAMPLE_BVMAC : 
                      market === "forex" ? SAMPLE_FOREX : 
                      market === "matieres" ? SAMPLE_MATIERES : EMPTY_MARKET;
-    return { ...fallback, isPremium: false, total: fallback.data.length };
+    // ✅ CORRECTION : signale clairement que ce sont des données de démonstration
+    return { ...fallback, isPremium: false, total: fallback.data.length, fromFallback: true };
   }
 }
 
@@ -165,6 +167,27 @@ function renderHero(items) {
   priceEl.textContent = formatFCFA(featured.price);
   changeEl.textContent = formatChange(featured.change_pct);
   changeEl.className = `hero-change ${changeClass(featured.change_pct)}`;
+}
+
+// ---------------------------------------------------------------
+// ✅ Bannière "hors ligne" quand on affiche des données de secours
+// ---------------------------------------------------------------
+function renderOfflineBanner(isOffline) {
+  let banner = document.getElementById("offline-banner");
+  if (isOffline) {
+    if (!banner) {
+      banner = document.createElement("div");
+      banner.id = "offline-banner";
+      banner.style.cssText =
+        "background:#8a6d1d;color:#fff;text-align:center;padding:8px 12px;font-size:13px;font-family:'IBM Plex Sans',sans-serif;";
+      banner.textContent = "⚠️ Connexion au serveur impossible — données de démonstration affichées.";
+      const header = document.querySelector(".app-header");
+      header ? header.insertAdjacentElement("afterend", banner)
+             : document.body.insertAdjacentElement("afterbegin", banner);
+    }
+  } else if (banner) {
+    banner.remove();
+  }
 }
 
 // ---------------------------------------------------------------
@@ -241,6 +264,7 @@ async function loadMarket(market) {
 
   localStorage.setItem("tradinggab_is_premium", premium ? "1" : "0");
   refreshPremiumCta(premium);
+  renderOfflineBanner(!!result.fromFallback);
 
   if (market === "bvmac") {
     state.bvmac = items;
@@ -267,11 +291,15 @@ function setupTabs() {
 function setupAccountLink() {
   const btn = document.getElementById("account-link");
   if (!btn) return;
-  const token = localStorage.getItem("tradinggab_token");
 
-  btn.textContent = token ? "Déconnexion" : "Se connecter";
+  // ✅ CORRECTION : lit le token au moment du clic, pas seulement au chargement
+  function refreshLabel() {
+    btn.textContent = localStorage.getItem("tradinggab_token") ? "Déconnexion" : "Se connecter";
+  }
+  refreshLabel();
 
   btn.addEventListener("click", () => {
+    const token = localStorage.getItem("tradinggab_token");
     if (token) {
       localStorage.removeItem("tradinggab_token");
       localStorage.removeItem("tradinggab_user_id");
@@ -307,6 +335,14 @@ async function loadProfile() {
     const res = await fetch(`${BACKEND_BASE_URL}/api/auth/me`, {
       headers: { Authorization: `Bearer ${token}` },
     });
+    // ✅ CORRECTION : si le token est invalide/expiré, on le nettoie proprement
+    if (res.status === 401) {
+      localStorage.removeItem("tradinggab_token");
+      localStorage.removeItem("tradinggab_user_id");
+      localStorage.removeItem("tradinggab_is_premium");
+      setupAccountLinkRefresh();
+      return;
+    }
     if (!res.ok) return;
     const { isPremium } = await res.json();
     localStorage.setItem("tradinggab_is_premium", isPremium ? "1" : "0");
@@ -316,10 +352,16 @@ async function loadProfile() {
   }
 }
 
+// Petite helper pour rafraîchir le libellé du bouton Compte après un 401
+function setupAccountLinkRefresh() {
+  const btn = document.getElementById("account-link");
+  if (btn) btn.textContent = "Se connecter";
+}
+
 function setupPremiumButton() {
   const btn = document.querySelector(".premium-cta");
   if (!btn) return;
-  
+
   btn.addEventListener("click", async () => {
     const token = localStorage.getItem("tradinggab_token");
 
@@ -368,6 +410,10 @@ function init() {
   setupAccountLink();
   loadProfile();
   loadMarket(state.market);
+
+  // ✅ CORRECTION : rafraîchissement automatique toutes les 30 minutes
+  // (le footer promet "rafraîchies toutes les 30 minutes")
+  setInterval(() => loadMarket(state.market), REFRESH_INTERVAL_MS);
 
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("sw.js").catch((err) => {
