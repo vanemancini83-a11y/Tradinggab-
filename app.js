@@ -105,7 +105,7 @@ async function fetchMarket(market) {
     matieres: "/api/marches/matieres",
   };
 
-  const token = localStorage.getItem("tradinggab_token");
+  const token = localStorage.getItem("viewcemac_token");
 
   try {
     const res = await fetch(`${BACKEND_BASE_URL}${endpoints[market]}`, {
@@ -262,7 +262,7 @@ async function loadMarket(market) {
   const premium = !!result.isPremium;
   state.isPremium = premium;
 
-  localStorage.setItem("tradinggab_is_premium", premium ? "1" : "0");
+  localStorage.setItem("viewcemac_is_premium", premium ? "1" : "0");
   refreshPremiumCta(premium);
   renderOfflineBanner(!!result.fromFallback);
 
@@ -294,16 +294,16 @@ function setupAccountLink() {
 
   // ✅ CORRECTION : lit le token au moment du clic, pas seulement au chargement
   function refreshLabel() {
-    btn.textContent = localStorage.getItem("tradinggab_token") ? "Déconnexion" : "Se connecter";
+    btn.textContent = localStorage.getItem("viewcemac_token") ? "Déconnexion" : "Se connecter";
   }
   refreshLabel();
 
   btn.addEventListener("click", () => {
-    const token = localStorage.getItem("tradinggab_token");
+    const token = localStorage.getItem("viewcemac_token");
     if (token) {
-      localStorage.removeItem("tradinggab_token");
-      localStorage.removeItem("tradinggab_user_id");
-      localStorage.removeItem("tradinggab_is_premium");
+      localStorage.removeItem("viewcemac_token");
+      localStorage.removeItem("viewcemac_user_id");
+      localStorage.removeItem("viewcemac_is_premium");
       window.location.reload();
     } else {
       window.location.href = "auth.html";
@@ -328,7 +328,7 @@ function refreshPremiumCta(isPremium) {
 }
 
 async function loadProfile() {
-  const token = localStorage.getItem("tradinggab_token");
+  const token = localStorage.getItem("viewcemac_token");
   if (!token) return;
 
   try {
@@ -337,15 +337,15 @@ async function loadProfile() {
     });
     // ✅ CORRECTION : si le token est invalide/expiré, on le nettoie proprement
     if (res.status === 401) {
-      localStorage.removeItem("tradinggab_token");
-      localStorage.removeItem("tradinggab_user_id");
-      localStorage.removeItem("tradinggab_is_premium");
+      localStorage.removeItem("viewcemac_token");
+      localStorage.removeItem("viewcemac_user_id");
+      localStorage.removeItem("viewcemac_is_premium");
       setupAccountLinkRefresh();
       return;
     }
     if (!res.ok) return;
     const { isPremium } = await res.json();
-    localStorage.setItem("tradinggab_is_premium", isPremium ? "1" : "0");
+    localStorage.setItem("viewcemac_is_premium", isPremium ? "1" : "0");
     refreshPremiumCta(isPremium);
   } catch {
     // silencieux : l'UI reste en mode non-Premium par défaut
@@ -363,14 +363,14 @@ function setupPremiumButton() {
   if (!btn) return;
 
   btn.addEventListener("click", async () => {
-    const token = localStorage.getItem("tradinggab_token");
+    const token = localStorage.getItem("viewcemac_token");
 
     if (!token) {
       window.location.href = "auth.html";
       return;
     }
 
-    if (localStorage.getItem("tradinggab_is_premium") === "1") {
+    if (localStorage.getItem("viewcemac_is_premium") === "1") {
       return;
     }
 
@@ -388,7 +388,7 @@ function setupPremiumButton() {
 
       if (res.status === 401) {
         alert("Ta session a expiré, reconnecte-toi.");
-        localStorage.removeItem("tradinggab_token");
+        localStorage.removeItem("viewcemac_token");
         return;
       }
       if (!res.ok) throw new Error("Échec de l'initialisation du paiement");
