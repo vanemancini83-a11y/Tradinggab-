@@ -4,9 +4,9 @@ const API_URL = "https://tradinggab-backend-2.onrender.com";
 // Mode par défaut
 let currentMode = "connexion";
 
-// Clé de stockage du token — DOIT correspondre à app.js ("tradinggab_token")
-const TOKEN_KEY = "tradinggab_token";
-const USER_ID_KEY = "tradinggab_user_id";
+// Clé de stockage du token — DOIT correspondre à app.js ("viewcemac_token")
+const TOKEN_KEY = "viewcemac_token";
+const USER_ID_KEY = "viewcemac_user_id";
 
 // Détection des onglets au chargement
 document.addEventListener('DOMContentLoaded', () => {
@@ -103,7 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
           throw new Error(data.error || data.message || "Erreur lors de l'authentification");
         }
 
-        // ✅ CORRECTION : même clé que app.js ("tradinggab_token")
+        // ✅ CORRECTION : même clé que app.js ("viewcemac_token")
         if (data.token) {
           localStorage.setItem(TOKEN_KEY, data.token);
         }
