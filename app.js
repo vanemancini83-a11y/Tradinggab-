@@ -24,6 +24,23 @@ const SAMPLE_BVMAC = {
     { ticker: "SEMC", name: "SEMC", price: 53000, change: 0, change_pct: 0, volume: 0 },
     { ticker: "SOCAPALM", name: "SOCAPALM", price: 50000, change: 0, change_pct: 2.1, volume: 2 },
   ],
+};const SAMPLE_FOREX = {
+  success: true,
+  data: [
+    { pair: "USD/XAF", rate: 605.50 },
+    { pair: "USD/EUR", rate: 0.92 },
+    { pair: "USD/GBP", rate: 0.79 },
+    { pair: "USD/CNY", rate: 7.23 }
+  ]
+};
+
+const SAMPLE_MATIERES = {
+  success: true,
+  data: [
+    { symbol: "BRENT", name: "Pétrole Brent", price: 82.50, unit: "$/baril", change_pct: 1.2, africa_note: "Impact direct sur les coûts de transport en zone CEMAC." },
+    { symbol: "COCOA", name: "Cacao", price: 9850.00, unit: "$/tonne", change_pct: -0.5, africa_note: "Le Cameroun et la Côte d'Ivoire sont des acteurs majeurs." },
+    { symbol: "GOLD", name: "Or", price: 2340.00, unit: "$/once", change_pct: 0.8, africa_note: "Valeur refuge en période d'inflation." }
+  ]
 };
 
 const EMPTY_MARKET = { success: true, data: [] };
@@ -109,7 +126,9 @@ async function fetchMarket(market) {
     return { success: true, data: result.data || [], isPremium, total };
   } catch (err) {
     console.warn(`Backend indisponible pour ${market}, données d'exemple utilisées si BVMAC.`, err);
-    const fallback = market === "bvmac" ? SAMPLE_BVMAC : EMPTY_MARKET;
+    const fallback = market === "bvmac" ? SAMPLE_BVMAC : 
+                     market === "forex" ? SAMPLE_FOREX : 
+                     market === "matieres" ? SAMPLE_MATIERES : EMPTY_MARKET;
     return { ...fallback, isPremium: false, total: fallback.data.length };
   }
 }
