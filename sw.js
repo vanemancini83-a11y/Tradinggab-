@@ -1,5 +1,5 @@
 // ✅ CORRECTION : bump de version pour forcer la mise à jour chez les utilisateurs
-const CACHE_NAME = "tradinggab-v5";
+const CACHE_NAME = "viewcemac-v1";
 const CORE_ASSETS = [
   "/",
   "/index.html",
