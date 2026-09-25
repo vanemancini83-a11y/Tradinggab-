@@ -1,5 +1,18 @@
-const CACHE_NAME = "tradinggab-v4";
-const CORE_ASSETS = ["/", "/index.html", "/styles.css", "/app.js", "/manifest.json"];
+// ✅ CORRECTION : bump de version pour forcer la mise à jour chez les utilisateurs
+const CACHE_NAME = "tradinggab-v5";
+const CORE_ASSETS = [
+  "/",
+  "/index.html",
+  "/styles.css",
+  "/app.js",
+  "/manifest.json",
+  // ✅ CORRECTION : la page de connexion doit fonctionner hors-ligne
+  "/auth.html",
+  "/auth.js",
+  "/privacy.html",
+  "/icons/viewcemac-icon-192.png",
+  "/icons/viewcemac-icon-512.png",
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
