@@ -52,6 +52,11 @@ const state = {
   isPremium: false,
 };
 
+// ✅ CORRECTION : identifiant de requête — si l'utilisateur change d'onglet
+// pendant qu'un fetch est en cours, la réponse trop tardive est ignorée
+// (sinon la liste affichait les données du MAUVAIS marché).
+let currentRequestId = 0;
+
 function formatFCFA(value) {
   return new Intl.NumberFormat("fr-FR").format(value) + " FCFA";
 }
@@ -255,9 +260,21 @@ function renderFreshness() {
   el.textContent = `Mis à jour à ${time}`;
 }
 
+function renderLoadingList() {
+  const list = document.getElementById("list");
+  if (!list) return;
+  list.innerHTML = `<p class="empty-message" style="text-align:center; padding: 24px; color: #9db8ad;">Chargement des données…</p>`;
+}
+
 async function loadMarket(market) {
+  const requestId = ++currentRequestId;
   state.market = market;
+  renderLoadingList();
   const result = await fetchMarket(market);
+
+  // ✅ Garde anti-course : onglet changé entre-temps → on ignore cette réponse
+  if (requestId !== currentRequestId || state.market !== market) return;
+
   const items = result.data || [];
   const premium = !!result.isPremium;
   state.isPremium = premium;
