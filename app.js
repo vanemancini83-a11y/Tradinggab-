@@ -421,12 +421,66 @@ function setupPremiumButton() {
   });
 }
 
+
+// ---------------------------------------------------------------
+// ✅ CORRECTION : activation Premium instantanée au retour de CinetPay.
+// Si l'URL contient ?transaction=VC-xxx (retour de paiement), on interroge
+// le serveur toutes les 5 s jusqu'à confirmation, puis on recharge le profil.
+// ---------------------------------------------------------------
+async function checkPaymentReturn() {
+  const params = new URLSearchParams(window.location.search);
+  const transactionId = params.get("transaction") || params.get("transaction_id");
+  if (!transactionId) return;
+
+  const token = localStorage.getItem("viewcemac_token");
+  if (!token) return;
+
+  const freshness = document.getElementById("freshness-text");
+  let attempts = 0;
+  const maxAttempts = 12; // ~1 minute
+
+  const poll = async () => {
+    attempts++;
+    try {
+      const res = await fetch(`${BACKEND_BASE_URL}/api/paiement/statut/${transactionId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("statut indisponible");
+      const { statut } = await res.json();
+
+      if (statut === "confirme") {
+        if (freshness) freshness.textContent = "Premium activé ✓";
+        await loadProfile();      // recharge isPremium → débloque l'UI
+        await loadMarket(state.market);
+        // Nettoie l'URL (enlève ?transaction=...)
+        window.history.replaceState({}, "", window.location.pathname);
+        return;
+      }
+      if (statut === "echoue") {
+        if (freshness) freshness.textContent = "Paiement échoué";
+        return;
+      }
+      if (attempts < maxAttempts) {
+        if (freshness) freshness.textContent = `Activation en cours… (${attempts * 5} s)`;
+        setTimeout(poll, 5000);
+      } else {
+        if (freshness) freshness.textContent = "Activation en attente — recharge la page plus tard";
+      }
+    } catch {
+      if (attempts < maxAttempts) setTimeout(poll, 5000);
+    }
+  };
+
+  await poll();
+}
+
 function init() {
   setupTabs();
   setupPremiumButton();
   setupAccountLink();
   loadProfile();
   loadMarket(state.market);
+  checkPaymentReturn(); // ✅ vérifie le retour de paiement CinetPay
 
   // ✅ CORRECTION : rafraîchissement automatique toutes les 30 minutes
   // (le footer promet "rafraîchies toutes les 30 minutes")
